@@ -1,37 +1,14 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-from supabase import create_client
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
+from app.db import get_supabase_client, get_latest_signal
 
 app = FastAPI()
 
 
-def get_latest_signal():
-    client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-    response = (
-        client.table("signals")
-        .select("*")
-        .order("created_at", desc=True)
-        .limit(1)
-        .execute()
-    )
-
-    if not response.data:
-        return None
-
-    return response.data[0]
-
-
 @app.get("/", response_class=HTMLResponse)
 def home():
-    signal = get_latest_signal()
+    client = get_supabase_client()
+    signal = get_latest_signal(client)
 
     if not signal:
         return "<h2>No signal available</h2>"
@@ -72,5 +49,4 @@ def home():
         </body>
     </html>
     """
-
     return html
